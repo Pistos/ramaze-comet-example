@@ -1,12 +1,17 @@
 require 'rubygems'
 require 'ramaze'
 
-require 'file-tail'
+require 'file/tail'
 
-$queue = []
+$lines = []
+$mutex = Mutex.new
 
-File::Tail::Logfile.tail( 'ramaze-comet-example.log', :backward => 10 ) do |line|
-  $queue << line
+$producer ||= Thread.new do
+  File::Tail::Logfile.tail( 'ramaze-comet-example.log' ) do |line|
+    $mutex.synchronize do
+      $lines << line
+    end
+  end
 end
 
 class MainController < Ramaze::Controller
@@ -15,11 +20,29 @@ class MainController < Ramaze::Controller
       Hello there
       this is a file
     }
+    session[ :ptr ] = 0
   end
 
   def next_lines
-    sleep( rand( 5 ) )
-    'line'
+    catch :new_data do
+      loop do
+        $mutex.synchronize do
+          if $lines.size > session[ :ptr ]
+            Ramaze::Log.debug "New data!"
+            throw :new_data
+          end
+        end
+        Ramaze::Log.debug "Waiting for data..."
+        sleep 3
+      end
+    end
+
+    lines = nil
+    $mutex.synchronize do
+      lines = $lines[ session[ :ptr ]..-1 ]
+      session[ :ptr ] = $lines.size
+    end
+    lines
   end
 end
 
