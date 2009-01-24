@@ -3,6 +3,8 @@ function get_more_lines() {
         '/next_lines',
         function( data ) {
             $( '#tailer' ).append( data + "\n" );
+            var tailer = $( '#tailer' ).get( 0 );
+            tailer.scrollTop = tailer.scrollHeight;
             setTimeout( get_more_lines(), 0 );
         }
     );
