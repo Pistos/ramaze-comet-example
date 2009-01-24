@@ -1,6 +1,14 @@
 require 'rubygems'
 require 'ramaze'
 
+require 'file-tail'
+
+$queue = []
+
+File::Tail::Logfile.tail( 'ramaze-comet-example.log', :backward => 10 ) do |line|
+  $queue << line
+end
+
 class MainController < Ramaze::Controller
   def index
     @file_contents = %{

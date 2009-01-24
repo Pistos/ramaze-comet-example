@@ -1,5 +1,10 @@
 function get_more_lines() {
-    $( '#tailer' ).load( '/next_lines' );
+    $.get(
+        '/next_lines',
+        function( data ) {
+            $( '#tailer' ).append( data )
+        }
+    );
 }
 
 $( document ).ready( function() {
