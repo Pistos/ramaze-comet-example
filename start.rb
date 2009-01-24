@@ -31,10 +31,6 @@ $producer ||= Producer.new
 
 class MainController < Ramaze::Controller
   def index
-    @file_contents = %{
-      Hello there
-      this is a file
-    }
   end
 
   def next_lines
@@ -49,6 +45,7 @@ class MainController < Ramaze::Controller
       sleep 1
     end
 
+    Ramaze::Log.debug "(timeout waiting for producer)"
     ''
   end
 end
