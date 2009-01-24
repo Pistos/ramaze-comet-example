@@ -2,9 +2,11 @@ function get_more_lines() {
     $.get(
         '/next_lines',
         function( data ) {
-            $( '#tailer' ).append( data + "\n" );
-            var tailer = $( '#tailer' ).get( 0 );
-            tailer.scrollTop = tailer.scrollHeight;
+            if( data != '' ) {
+                $( '#tailer' ).append( data + "\n" );
+                var tailer = $( '#tailer' ).get( 0 );
+                tailer.scrollTop = tailer.scrollHeight;
+            }
             setTimeout( get_more_lines(), 0 );
         }
     );
