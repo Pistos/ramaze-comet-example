@@ -18,16 +18,66 @@ class Producer
     end
   end
 
-  def new_lines( ptr_id )
+  def new_lines( subscriber_id )
     @mutex.synchronize do
-      ptr = @seen_pointers[ ptr_id ]
-      @seen_pointers[ ptr_id ] = @lines.size
+      ptr = @seen_pointers[ subscriber_id ]
+      @seen_pointers[ subscriber_id ] = @lines.size
       @lines[ ptr..-1 ]
     end
   end
 end
 
+class ChatChannel
+  STATES = {}
+  ATIMES = {}
+  TIMEOUT = 10
+
+  def initialize
+  end
+
+  def new_lines(subscriber_id)
+    state = touch(subscriber_id)
+    if state.empty?
+      []
+    else
+      [ state.shift ]
+    end
+  end
+
+  def touch(subscriber_id)
+    ATIMES[subscriber_id] = Time.now
+    STATES[subscriber_id] ||= Queue.new
+  end
+
+  def gc
+    limit = Time.now - TIMEOUT
+    STATES.delete_if{|k,v| ATIMES[k] < limit }
+    ATIMES.delete_if{|k,v| v < limit }
+  end
+
+  def push(obj)
+    gc
+    STATES.each{|k,v| p k => v; v.push(obj) }
+  end
+end
+
 $producer ||= Producer.new
+#$producer ||= ChatChannel.new
+
+if $producer.is_a? ChatChannel
+  # Produce random lines, simulating chat
+  Thread.new do
+    counter = 0
+
+    loop do
+      $producer.push("random #{counter}: #{rand}")
+      counter += 1
+      sleep rand(10)
+    end
+  end
+end
+
+# ------------------------------------------------------------
 
 class MainController < Ramaze::Controller
   def index
@@ -50,4 +100,4 @@ class MainController < Ramaze::Controller
   end
 end
 
-Ramaze.start :adapter => :mongrel, :port => 7000
+Ramaze.start :adapter => :mongrel, :port => 7001
