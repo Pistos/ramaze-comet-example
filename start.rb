@@ -3,20 +3,17 @@ require 'ramaze'
 
 Ramaze::acquire 'src/*'
 
-$producer ||= TailerQueue.new
+$tailer ||= TailerQueue.new
+$chitchat ||= ChatChannel.new
 
-#$producer ||= ChatChannel.new
+# Produce random lines, simulating chat
+Thread.new do
+  counter = 0
 
-if $producer.is_a? ChatChannel
-  # Produce random lines, simulating chat
-  Thread.new do
-    counter = 0
-
-    loop do
-      $producer.push("random #{counter}: #{rand}")
-      counter += 1
-      sleep rand(10)
-    end
+  loop do
+    $chitchat.push("random #{counter}: #{rand}")
+    counter += 1
+    sleep rand(10)
   end
 end
 

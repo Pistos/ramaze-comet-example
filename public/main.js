@@ -1,17 +1,22 @@
-function get_more_lines() {
+function get_more_lines( receiver_id, data_uri ) {
     $.get(
-        '/next_lines',
+        data_uri,
         function( data ) {
             if( data != '' ) {
-                $( '#tailer' ).append( data + "\n" );
-                var tailer = $( '#tailer' ).get( 0 );
-                tailer.scrollTop = tailer.scrollHeight;
+                $( receiver_id ).append( data + "\n" );
+                var receiver = $( receiver_id ).get( 0 );
+                receiver.scrollTop = receiver.scrollHeight;
             }
-            setTimeout( get_more_lines(), 0 );
+            setTimeout( get_more_lines( receiver_id, data_uri ), 0 );
         }
     );
 }
 
 $( document ).ready( function() {
-    get_more_lines();
+    if( $( '#tailer' ).length ) {
+        get_more_lines( '#tailer', '/next_tailer_lines' );
+    }
+    if( $( '#chitchat' ).length ) {
+        get_more_lines( '#chitchat', '/next_chat_lines' );
+    }
 } );

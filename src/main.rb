@@ -1,7 +1,15 @@
 class MainController < Ramaze::Controller
-  def next_lines
+  def next_tailer_lines
+    next_lines $tailer
+  end
+
+  def next_chat_lines
+    next_lines $chitchat
+  end
+
+  def next_lines( producer )
     60.times do
-      lines = $producer.new_lines( session.session_id )
+      lines = producer.new_lines( session.session_id )
       if lines.any?
         Ramaze::Log.debug "New data!"
         return lines
@@ -14,4 +22,5 @@ class MainController < Ramaze::Controller
     Ramaze::Log.debug "(timeout waiting for producer)"
     ''
   end
+  private :next_lines
 end
