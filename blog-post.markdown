@@ -35,7 +35,37 @@ Comet tries to address both problems, so no tradeoff has to be made.  With Comet
 
 There are roughly two kinds of Comet:
 
-### Producers and consumers
+#### Streaming
+
+In streaming Comet, a connection between client and server is made, and data is pushed from server to client whenever it is available.  The connection remains open after each bit of data is transferred.  The example in this article does not implement this type of Comet.
+
+#### Long polling
+
+Long polling works like the "bad" polling design, except the server does not respond to the client until the data is ready.  As already mentioned, this results in fewer network connections while still maintaining low latency.
 
 <h3 id="example">A Comet example in Ramaze</h3>
 
+I'll exemplify Comet in Ramaze by building a web application that tails a file on the server and displays the lines on the web page as soon as they are available.  The full source code can be found [on github](http://github.com/Pistos/ramaze-comet-example/tree/master).  You are advised to clone or download from there so you can follow along.  I will not go over every line of code in this article.
+
+#### Client
+
+The web page is very simple.  It has this body:
+
+<pre lang="html4strict">
+<body>
+  <h4>Tailer:</h4>
+  <textarea id="tailer" rows="16" cols="80"></textarea>
+</body>
+</pre>
+
+We use a &lt;textarea&gt; to hold the file lines, and give it an id, <code>tailer</code>.
+
+In [the Javascript](http://github.com/Pistos/ramaze-comet-example/blob/8336ca003822eade42ee1609c4859f55747501c6/public/main.js), we have a function called <code>get_more_lines</code>.  The client:
+
+1. calls this function which
+2. waits for data
+3. receives the data
+4. appends the data into the &lt;textarea&gt;
+5. calls the function again (repeats from step 1)
+
+#### Server
