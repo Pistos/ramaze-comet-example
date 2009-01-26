@@ -1,4 +1,4 @@
-require 'file/tail'
+require 'file/tail'   # gem install file-tail
 
 # Tails a file and lets subscribers retrieve the lines asynchronously.
 
