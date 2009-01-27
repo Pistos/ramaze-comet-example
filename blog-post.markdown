@@ -1,9 +1,11 @@
-In this blog post, I describe how to do (one kind of) Comet in a Ramaze web application using jQuery.  I begin by glossing over Comet, what problem Comet tries to solve, and some other related concepts.  Those of you already familiar with Comet can jump right to
+In this blog post, I describe how to do (one kind of) Comet in a [Ramaze](http://ramaze.net) web application using [jQuery](http://jquery.com).  I begin by glossing over Comet, what problem Comet tries to solve, and some other related concepts.  Those of you already familiar with Comet can jump right to
 [the example](#example).
+
+To get the most out of this article, you should be comfortable with Ramaze, HTML and Javascript.  If you need to get up to speed on Ramaze, learn more [at the Ramaze website](http://ramaze.net/learn).
 
 ### What's Comet?
 
-From the Wikipedia article on Comet in web programming:
+From [the Wikipedia article on Comet in web programming](http://en.wikipedia.org/wiki/Comet_(programming)):
 
 > In web development, Comet is a neologism to describe a web application model in which a long-held HTTP request allows a web server to push data to a browser, without the browser explicitly requesting it. Comet is an umbrella term for multiple techniques for achieving this interaction. All methods have in common that they rely on browser-native technologies such as JavaScript
 
@@ -11,12 +13,16 @@ From the Wikipedia article on Comet in web programming:
 
 In traditional web applications, the process flow is:
 
+![Traditional web app flow](/wp-content/uploads/ramaze-comet-example/traditional-flow.png)
+
 1. time passes until the web browser (the client) wants data
-2. client requests it from server
+2. client requests data from server
 3. server gives data to client
 4. repeat from step 1
 
 As web developers got more clever, they wondered how they might get the server to give data to the client when the *server* wanted to give it, not when the client wanted to get it.  So they came up with a flow like this:
+
+![Naive polling flow](/wp-content/uploads/ramaze-comet-example/naive-polling.png)
 
 1. client asks for data from server, if any (client polls server)
 2. if server doesn't have data ready, server tells client no data is available
@@ -42,6 +48,8 @@ In streaming Comet, a connection between client and server is made, and data is 
 #### Long polling
 
 Long polling works like the "bad" polling design, except the server does not respond to the client until the data is ready.  As already mentioned, this results in fewer network connections while still maintaining low latency.
+
+![Long polling flow](/wp-content/uploads/ramaze-comet-example/long-polling.png)
 
 <h2 id="example">A Comet example in Ramaze</h2>
 
@@ -89,9 +97,9 @@ As you saw [in the client code](http://github.com/Pistos/ramaze-comet-example/bl
 end
 </pre>
 
-When there is a request for <code>next_lines</code>, the server checks the server-side producer for more data.  If there is no new data, rather than returning any response to the client, the server continues to poll the producer.  They key thing to note here is that the server is doing the polling server-side.  The client is merely waiting for the server to respond to the single request -- no polling going on between client and server while data is unavailable.
+When there is a request for <code>next_lines</code>, the server checks the server-side producer for more data.  If there is no new data, rather than returning any response to the client, the server continues to poll the producer.  They key thing to note here is that the server is doing the polling server-side.  The client is merely waiting for the server to respond to the single request -- no polling is going on between client and server while data is unavailable.
 
-If and when the data is available from the producer, the server gives that data to the client right away.
+If and when the data becomes available from the producer, the server gives that data to the client right away.
 
 On a basic level that's all you need for Comet!
 
@@ -108,7 +116,7 @@ Try out this example yourself!  Grab the code with
 
 Install the <code>file-tail</code> gem, and then open up a <code>ramaze-comet-example.log</code> file in the same directory as <code>start.rb</code>.  Fill it with some sample text.
 
-Browse to [http://localhost:7001/tail](http://localhost:7001/tail).  You should see the last 10 lines of your <code>ramaze-comet-example.log</code> file.  Now, with the web page open, add some more lines to the file, and then look at your browser; the new lines should appear (after a tiny delay).
+Then run <code>start.rb</code> and browse to [http://localhost:7001/tail](http://localhost:7001/tail).  You should see the last 10 lines of your <code>ramaze-comet-example.log</code> file.  Now, with the web page open, add some more lines to the file (don't forget to save if you're using an editor to add lines), and then look at your browser; the new lines should appear (after a tiny delay).
 
 ### Details
 
@@ -127,7 +135,7 @@ A common workaround for this issue is to create subdomains on a domain (usually 
 #### The Javascript in detail
 
 For those who are interested, I'll explain the Javascript in greater detail.  Let's look at
-[the get_more_lines](http://github.com/Pistos/ramaze-comet-example/blob/c28c972d05827dffeeb1804768b1a71aba3a7546/public/main.js#L1) function:
+[the get_more_lines function](http://github.com/Pistos/ramaze-comet-example/blob/c28c972d05827dffeeb1804768b1a71aba3a7546/public/main.js#L1):
 
 <pre lang="javascript">
 $.get(
