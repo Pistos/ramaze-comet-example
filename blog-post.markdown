@@ -3,6 +3,8 @@ In this blog post, I describe how to do (one kind of) Comet in a [Ramaze](http:/
 
 To get the most out of this article, you should be comfortable with Ramaze, HTML and Javascript.  If you need to get up to speed on Ramaze, learn more [at the Ramaze website](http://ramaze.net/learn).
 
+<!--more-->
+
 ### What's Comet?
 
 From [the Wikipedia article on Comet in web programming](http://en.wikipedia.org/wiki/Comet_(programming)):
@@ -13,7 +15,11 @@ From [the Wikipedia article on Comet in web programming](http://en.wikipedia.org
 
 In traditional web applications, the process flow is:
 
+----
+
 ![Traditional web app flow](/wp-content/uploads/ramaze-comet-example/traditional-flow.png)
+
+----
 
 1. time passes until the web browser (the client) wants data
 2. client requests data from server
@@ -22,7 +28,11 @@ In traditional web applications, the process flow is:
 
 As web developers got more clever, they wondered how they might get the server to give data to the client when the *server* wanted to give it, not when the client wanted to get it.  So they came up with a flow like this:
 
+----
+
 ![Naive polling flow](/wp-content/uploads/ramaze-comet-example/naive-polling.png)
+
+----
 
 1. client asks for data from server, if any (client polls server)
 2. if server doesn't have data ready, server tells client no data is available
@@ -32,8 +42,8 @@ As web developers got more clever, they wondered how they might get the server t
 
 However, when developing an application with this design, you had to make a tradeoff:
 
- * Frequent polling, paying the creation and teardown costs making the network connections; or
- * Infrequent polling, resulting in the client interface being delayed in reflecting actual readiness of data
+ * Polling frequently puts unnecessary load on the server
+ * Polling infrequently causes the client interface to lag behind the actual data source
 
 Comet tries to address both problems, so no tradeoff has to be made.  With Comet, you can poll infrequently but still get the data to the client very soon after the server is ready to give it.
 
@@ -43,13 +53,17 @@ There are roughly two kinds of Comet:
 
 #### Streaming
 
-In streaming Comet, a connection between client and server is made, and data is pushed from server to client whenever it is available.  The connection remains open after each bit of data is transferred.  The example in this article does not implement this type of Comet.
+In streaming Comet, a connection between client and server is made, and data is pushed from server to client whenever it is available.  The connection always remains open, even after each bit of data is transferred.  The example in this article does not implement this type of Comet.
 
 #### Long polling
 
 Long polling works like the "bad" polling design, except the server does not respond to the client until the data is ready.  As already mentioned, this results in fewer network connections while still maintaining low latency.
 
+----
+
 ![Long polling flow](/wp-content/uploads/ramaze-comet-example/long-polling.png)
+
+----
 
 <h2 id="example">A Comet example in Ramaze</h2>
 
@@ -59,7 +73,7 @@ I also make use of another data producer which manveru provided.  The applicatio
 
 ### Client
 
-[The web page](http://github.com/Pistos/ramaze-comet-example/blob/8336ca003822eade42ee1609c4859f55747501c6/view/tail.xhtml) is very simple.  It has this body:
+[The web page code](http://github.com/Pistos/ramaze-comet-example/blob/8336ca003822eade42ee1609c4859f55747501c6/view/tail.xhtml) is very simple.  It has this body:
 
 <pre lang="html4strict">
 <body>
@@ -97,15 +111,18 @@ As you saw [in the client code](http://github.com/Pistos/ramaze-comet-example/bl
 end
 </pre>
 
-When there is a request for <code>next_lines</code>, the server checks the server-side producer for more data.  If there is no new data, rather than returning any response to the client, the server continues to poll the producer.  They key thing to note here is that the server is doing the polling server-side.  The client is merely waiting for the server to respond to the single request -- no polling is going on between client and server while data is unavailable.
+When there is a request for <code>next_lines</code>, the server checks the server-side producer for more data.  If there is no new data, rather than returning any response to the client, the server continues to poll the producer.
+
+The key thing to note here is that the server is doing the polling server-side.  The client is merely waiting for the server to respond to the single request -- no polling is going on between client and server while data is unavailable.  Because the polling is server-side, it is much cheaper, so we can be much more liberal with the polling frequency.
 
 If and when the data becomes available from the producer, the server gives that data to the client right away.
 
-On a basic level that's all you need for Comet!
+On a basic level, that's all you need for Comet!
 
-1. A URI for the client to retrieve data from
-2. A client-side loop
-3. Server-side polling
+1. Server-side producer(s)
+2. URI for the client to retrieve data from
+3. Client-side "request and consume" loop
+4. On request, server polls data source (producer), responding only when ready
 
 Try out this example yourself!  Grab the code with
 
@@ -114,15 +131,19 @@ Try out this example yourself!  Grab the code with
 (or download it with the "download" button
  [on github](http://github.com/Pistos/ramaze-comet-example/tree/master)).
 
-Install the <code>file-tail</code> gem, and then open up a <code>ramaze-comet-example.log</code> file in the same directory as <code>start.rb</code>.  Fill it with some sample text.
+Install the <code>file-tail</code> gem, and then open up a <code>ramaze-comet-example.log</code> file in the same directory as <code>start.rb</code>.  Fill it with some sample text.  Then run
 
-Then run <code>start.rb</code> and browse to [http://localhost:7001/tail](http://localhost:7001/tail).  You should see the last 10 lines of your <code>ramaze-comet-example.log</code> file.  Now, with the web page open, add some more lines to the file (don't forget to save if you're using an editor to add lines), and then look at your browser; the new lines should appear (after a tiny delay).
+  ruby start.rb
+
+and browse to [http://localhost:7001/tail](http://localhost:7001/tail).  You should see the last 10 lines of your <code>ramaze-comet-example.log</code> file.  Now, with the web page open, add some more lines to the file (don't forget to save if you're using an editor to add lines), and then look at your browser; the new lines should appear (after a tiny delay).  And of course, since this uses AJAX, there is no need to refresh the page to see new data.
+
+You can also experiment by changing the filepath in the source code to point to a real log file of your own.
 
 ### Details
 
 #### Server-side timeout
 
-You may wonder why we [loop only 60 times](http://github.com/Pistos/ramaze-comet-example/blob/8336ca003822eade42ee1609c4859f55747501c6/src/main.rb#L11) instead of infinitely polling for data.  While this would be possible, it is not practical to do so because the server will continue to poll even if the client disconnects (such as if the browser tab is closed, or the page is refreshed).  It's better to time out the polling and return empty data.  If the client is gone, communications cease, and the server can return to idling, waiting for more clients.  If the client is still around, it will reinitiate a fresh network connection.  But that's why this technique is called "long polling" and not "infinitely long polling".  In contrast with the naive polling implementation, the polls are less frequent and their durations are much longer.
+You may wonder why we [loop only 60 times](http://github.com/Pistos/ramaze-comet-example/blob/8336ca003822eade42ee1609c4859f55747501c6/src/main.rb#L11) instead of infinitely polling for data.  While infinite polling is possible, it is not practical to employ because the server would continue to poll even after the client disconnects (such as when the browser tab is closed, or the page is refreshed).  It's better to time out the polling and return empty data.  If the client is gone, the empty data is sent harmlessly into the ether, communications cease, and the server will stop polling.  If the client is still around, it will reinitiate a fresh network connection, and polling will continue.  But that's why this technique is called "long polling" and not "infinitely long polling".  In contrast with the naive polling implementation, the client-side polls are less frequent and their durations are much longer.
 
 In this example, we loop 60 times, waiting one second per iteration.  You can obviously tweak these numbers for your own needs in your application; sleep less or more; loop fewer or more times for a shorter or longer server-side timeout.  The tradeoff with longer server-side timeouts is that your application is doing a little extra work for nothing for clients that have disconnected.
 
@@ -153,7 +174,7 @@ $.get(
 
 The first line is the call to jQuery's [get](http://docs.jquery.com/Ajax/jQuery.get#urldatacallbacktype) function.  This issues an HTTP GET request.  The first argument is the URI to call.  The second argument is a callback function used to process the server response.
 
-Inside the callback function, we have a conditional to check whether we actually got data, or the server timed out waiting for the producer to produce new data.  If we have data, then we <code>append</code> the data to the jQuery element (or document element, if you prefer) which we reference by the given id string.  Then we use <code>scrollTop</code> and <code>scrollHeight</code> to auto-scroll the &lt;textarea&gt; to the bottom as new lines are fetched.
+Inside the callback function, we have a conditional to check whether (a) we actually got data, or (b) the server timed out waiting for the producer to produce new data.  If we have data, then we <code>append</code> the data to the jQuery element (or document element, if you prefer) which we reference by the given id string.  Then we use <code>scrollTop</code> and <code>scrollHeight</code> to auto-scroll the &lt;textarea&gt; to the bottom as new lines are fetched.
 
 The last line of the callback function calls <code>get_more_lines</code> again.  The reason we use <code>setTimeout</code> is because if we called <code>get_more_lines</code> directly, that would be recursion, which runs the risk of consuming memory as each step of recursion grows the call stack.
 
